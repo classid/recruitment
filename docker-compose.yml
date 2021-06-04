@@ -1,0 +1,52 @@
+version: "3.8"
+
+networks:
+  frontend:
+    driver: ${DOCKER_NETWORKS_DRIVER}
+  backend:
+    driver: ${DOCKER_NETWORKS_DRIVER}
+
+volumes:
+  postgres:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+  redis:
+    driver: ${DOCKER_VOLUMES_DRIVER}
+
+services:
+  core:
+    build:
+      context: docker/image
+      args:
+        - USER_CONTAINER=${DOCKER_USER}
+        - PUID=${DOCKER_PUID}
+        - PGID=${DOCKER_PGID}
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    volumes:
+      # laravel comes up with public dir inside workdir, so we will mount only /var/www
+      - ./:/var/www
+    ports:
+      - ${DOCKER_PORT}:80
+    networks:
+      - frontend
+      - backend
+  db:
+    image: timescale/timescaledb:2.1.0-pg13
+    volumes:
+      - ${DOCKER_DATA_PATH_HOST}/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - backend
+  redis:
+    image: redis
+    restart: unless-stopped
+    volumes:
+      - ${DOCKER_DATA_PATH_HOST}/redis:/data
+    networks:
+      - backend

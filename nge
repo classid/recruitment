@@ -1,0 +1,100 @@
+#!/bin/bash
+set -Eeo pipefail
+set -o errexit    # Used to exit upon error, avoiding cascading errors
+
+IFS=$'\n\t'
+
+# read .env file
+source <(grep -v '^#' .env | sed -E 's|^(.+)=(.*)$|: ${\1=\2}; export \1|g')
+
+# usage: file_env VAR [DEFAULT]
+#    ie: file_env 'XYZ_DB_PASSWORD' 'example'
+# (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
+#  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
+file_env() {
+	local var="$1"
+	local fileVar="${var}_FILE"
+	local def="${2:-}"
+	if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+		echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
+		exit 1
+	fi
+	local val="$def"
+	if [ "${!var:-}" ]; then
+		val="${!var}"
+	elif [ "${!fileVar:-}" ]; then
+		val="$(< "${!fileVar}")"
+	fi
+	export "$var"="$val"
+	unset "$fileVar"
+}
+
+install() {
+	echo "installing in 5 seconds"
+	sleep 5
+
+    printf "\n\n${YELLOW}[core]${NC} installing package...\n"
+    composer install
+    printf "\n\n${YELLOW}[core]${NC} run post installation script...\n"
+    composer run post-root-package-install
+    printf "\n\n${YELLOW}[core]${NC} put application under maintenance...\n"
+    artisan down
+    printf "\n\n${YELLOW}[core]${NC} running database migration and seeders...\n"
+    artisan migrate --seed
+    printf "\n\n${YELLOW}[core]${NC} upping application\n"
+    artisan up
+
+    printf "\n\n${BLUE}[app]${NC} building node packages...\n"
+    npm install
+    npm run production
+
+}
+
+composer() {
+    file_env 'USER_CONTAINER' 'dokar'
+    echo "run composer on user : ${USER_CONTAINER}"
+    docker-compose run --rm --user=${USER_CONTAINER} core composer $@
+}
+
+shell() {
+    file_env 'USER_CONTAINER' 'dokar'
+    echo "run shell on user : ${USER_CONTAINER}"
+    docker-compose run --rm --user=${USER_CONTAINER} core bash
+}
+
+artisan() {
+    file_env 'USER_CONTAINER' 'dokar'
+    echo "run artisan on user : ${USER_CONTAINER}"
+    docker-compose run --rm --user=${USER_CONTAINER} core php artisan $@
+}
+
+npm() {
+    file_env 'USER_CONTAINER' 'dokar'
+    echo "run npm on user : ${USER_CONTAINER}"
+    docker-compose run --rm --user=${USER_CONTAINER} core npm $@
+}
+
+up() {
+    echo "Nge up service $@..."
+    docker-compose up -d $@
+}
+
+down() {
+    echo "Nge down all service..."
+    docker-compose down
+}
+
+check() {
+    docker-compose ps
+}
+
+# Check if the function exists (bash specific)
+if declare -f "$1" > /dev/null
+then
+  # call arguments verbatim
+  "$@"
+else
+  # Show a helpful error
+  echo "'$1' is not a known function name" >&2
+  exit 1
+fi

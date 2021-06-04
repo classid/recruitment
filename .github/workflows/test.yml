@@ -1,0 +1,52 @@
+name: Test
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        php: [ 8.0 ]
+    services:
+      postgres:
+        image: timescale/timescaledb:2.1.0-pg13
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: xdebug
+      - name: Install dependencies
+        run: composer install -q --no-interaction
+      - name: Generate key
+        run: php artisan key:generate --env=testing
+      - name: Directory Permissions
+        run: chmod -R 777 storage bootstrap/cache
+      - name: Run Test
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_DATABASE: postgres
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_PORT: 5432
+        run: php artisan test --parallel --recreate-databases
+        # update to codecov when ready..
+#      - name: Upload to CodeCov.io
+#        uses: codecov/codecov-action@v1
+#        with:
+#          token: ${{ secrets.CDCV_KEY }}
+#          file: ./coverage.xml
