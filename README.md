@@ -1,26 +1,33 @@
-<h1 align="center">Nge (Noob Edition)</h1>
+<h1 align="center">Digital Cerdas Berbagi Recruitment Session</h1>
 
-Laravel project customized stack by DigitalEntropy.
+### Procedure
 
-### Requirements : 
- - Docker 
-   <br>or <br>
- - PHP 8
- - Swoole Extensions
- - NodeJS 14 or newer
-   
+1. Fork this repository.
+2. **Build a TodoApp** from your fork.
 
-### Quick Start :
-```shell
-cp .env.example .env
-./nge artisan key:generate
-./nge install
-./nge up
-```
-open https://localhost:8000 in your favorite browser.
+### MVP
 
-### FAQ : 
+1. Create Todo.
+2. Show all Todo.
+3. Edit Todo.
+4. Delete Todo.
 
-> Q : where is routes folder ?. <br>
-> A : we replace default laravel router with our own custom route [here](https://github.com/digital-entropy/yalr). 
-> you can saw all the routes in config/routes.php  
+### Scoring
+
+1. Fluently using Eloquent Model. 
+   - your TodoApp can represent use case of `belongsToMany`.
+   - your TodoApp can represent use case of `hasManyThrough`.
+   - your TodoApp can represent use case of Polymorphic Relationship `morphMany` or `morphToMany`.
+2. Implement logic separation from controller such as using `Actions` or `Jobs`.
+3. Implement Inertia and Tailwind CSS.
+4. Implement Feature, Unit, or Browser Tests.
+
+### FAQ
+> Q : I'm not familiar with Jetstream / Inertia / Vue 3 / Tailwind CSS  <br>
+> A : You're free to change your fork to your familiar stack, even you're free to not fork this repo and create from fresh laravel as long as MVP achieved.
+
+> Q : Is this repo only work on PHP 8 ? <br>
+> A : yes it is. That's why we create `./nge` and `docker-compose.yaml` script. 
+
+
+![](https://media.giphy.com/media/ieUnS3iEokPahZAZj6/giphy.gif)
