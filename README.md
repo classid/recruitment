@@ -1,4 +1,4 @@
-<h1 align="center">Digital Cerdas Berbagi Recruitment Session</h1>
+<h1 align="center">Mumtaz Recruitment Session</h1>
 
 ### Procedure
 
